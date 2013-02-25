@@ -3,6 +3,7 @@
 //#include <errno.h>
 //#include <string.h>
 //#include <stdlib.h>
+#include "dmxusb.h"
 
 #define DMX_START 18
 #define DMX_LENGTH 512
@@ -29,19 +30,21 @@ int dmxusb_init(FILE* fp) {
 	return i;
 }
 
-struct usbdmx_data {
-	unsigned char start;
-	unsigned char chan;
-	unsigned char val;
-};
-
-int dmxusb_send(unsigned char* in_buf, int in_length) {
+int dmxusb_send(unsigned char* in_buf, int in_length, int save) {
 	static unsigned char prev_buf[DMX_LENGTH]={0};
 	static struct usbdmx_data out_buf[DMX_LENGTH];
 	static int first_run=1;
 	int out_length=0;
 	int startbyte=0x48;
 	int i;
+
+	if (save){
+		FILE* fp=fopen(SAVEFILE, "wb");
+		if (fp) {
+			fwrite(prev_buf, 1, sizeof(prev_buf), fp);
+			fclose(fp);
+		}
+	}
 
 	for(i=0; i<in_length; i++){
 		if(prev_buf[i] != in_buf[i] || first_run == 1) {
